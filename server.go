@@ -53,6 +53,7 @@ type Server struct {
 	listenTo      string
 	driverFactory DriverFactory
 	logger        *Logger
+	listener      net.Listener
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -139,6 +140,7 @@ func (server *Server) newConn(tcpConn net.Conn, driver Driver, auth Auth) *Conn 
 	c.server = server
 	c.sessionId = newSessionId()
 	c.logger = newLogger(c.sessionId)
+	driver.Init(c)
 	return c
 }
 
@@ -166,17 +168,12 @@ func simpleTLSConfig(certFile, keyFile string) (*tls.Config, error) {
 // listening on the same port.
 //
 func (Server *Server) ListenAndServe() error {
-	/*laddr, err := net.ResolveTCPAddr("tcp", Server.listenTo)
-	if err != nil {
-		return err
-	}*/
-
 	var listener net.Listener
 	var err error
-	//fmt.Println("-------", *Server.ServerOpts)
+
 	if Server.ServerOpts.TLS {
-		//fmt.Println("use tls")
-		config, err := simpleTLSConfig(Server.CertFile, Server.KeyFile)
+		var config *tls.Config
+		config, err = simpleTLSConfig(Server.CertFile, Server.KeyFile)
 		if err != nil {
 			return err
 		}
@@ -191,20 +188,31 @@ func (Server *Server) ListenAndServe() error {
 
 	Server.logger.Printf("%s listening on %d", Server.Name, Server.Port)
 
+	Server.listener = listener
 	for {
-		tcpConn, err := listener.Accept()
+		tcpConn, err := Server.listener.Accept()
 		if err != nil {
-			Server.logger.Print("listening error")
+			Server.logger.Printf("listening error: %v", err)
 			break
 		}
 		driver, err := Server.driverFactory.NewDriver()
 		if err != nil {
-			Server.logger.Print("Error creating driver, aborting client connection")
+			Server.logger.Printf("Error creating driver, aborting client connection: %v", err)
+			tcpConn.Close()
 		} else {
 			ftpConn := Server.newConn(tcpConn, driver, Server.Auth)
 			go ftpConn.Serve()
 		}
 	}
+	return nil
+}
+
+// Gracefully stops a server. Already connected clients will retain their connections
+func (Server *Server) Shutdown() error {
+	if Server.listener != nil {
+		return Server.listener.Close()
+	}
+	// server wasnt even started
 	return nil
 }
 
