@@ -13,8 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jehiah/go-strftime"
-	"github.com/lunny/log"
+	"log"
 )
 
 type Command interface {
@@ -239,11 +238,11 @@ func (cmd commandDele) IsExtend() bool {
 }
 
 func (cmd commandDele) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandDele) Execute(conn *Conn, param string) {
@@ -319,7 +318,7 @@ func (cmd commandEpsv) Execute(conn *Conn, param string) {
 
 	socket, err := newPassiveSocket(addr[:lastIdx], conn.PassivePort(), conn.logger, conn.tlsConfig)
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		conn.writeMessage(425, "Data connection failed")
 		return
 	}
@@ -461,7 +460,7 @@ func (cmd commandMdtm) Execute(conn *Conn, param string) {
 	path := conn.buildPath(param)
 	stat, err := conn.driver.Stat(path)
 	if err == nil {
-		conn.writeMessage(213, strftime.Format("%Y%m%d%H%M%S", stat.ModTime()))
+		conn.writeMessage(213, stat.ModTime().Format("20060102150405"))
 	} else {
 		conn.writeMessage(450, "File not available")
 	}
@@ -476,11 +475,11 @@ func (cmd commandMkd) IsExtend() bool {
 }
 
 func (cmd commandMkd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandMkd) Execute(conn *Conn, param string) {
@@ -552,7 +551,7 @@ func (cmd commandPass) IsExtend() bool {
 }
 
 func (cmd commandPass) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandPass) RequireAuth() bool {
@@ -707,6 +706,7 @@ func (cmd commandRetr) Execute(conn *Conn, param string) {
 	}()
 	bytes, data, err := conn.driver.GetFile(path, conn.lastFilePos)
 	if err == nil {
+		defer data.Close()
 		conn.writeMessage(150, fmt.Sprintf("Data transfer starting %v bytes", bytes))
 		err = conn.sendOutofBandDataWriter(data)
 	} else {
@@ -750,11 +750,11 @@ func (cmd commandRnfr) IsExtend() bool {
 }
 
 func (cmd commandRnfr) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnfr) Execute(conn *Conn, param string) {
@@ -771,11 +771,11 @@ func (cmd commandRnto) IsExtend() bool {
 }
 
 func (cmd commandRnto) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRnto) Execute(conn *Conn, param string) {
@@ -801,11 +801,11 @@ func (cmd commandRmd) IsExtend() bool {
 }
 
 func (cmd commandRmd) RequireParam() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) RequireAuth() bool {
-	return false
+	return true
 }
 
 func (cmd commandRmd) Execute(conn *Conn, param string) {
@@ -1080,7 +1080,7 @@ func (cmd commandSyst) IsExtend() bool {
 }
 
 func (cmd commandSyst) RequireParam() bool {
-	return true
+	return false
 }
 
 func (cmd commandSyst) RequireAuth() bool {

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"net"
 	"strconv"
-	"strings"
 )
 
 func Version() string {
@@ -58,13 +57,10 @@ type ServerOpts struct {
 // Always use the NewServer() method to create a new Server.
 type Server struct {
 	*ServerOpts
-	name          string
-	listenTo      string
-	driverFactory DriverFactory
-	logger        *Logger
-	listener      net.Listener
-	tlsConfig     *tls.Config
-	publicIp      string
+	listenTo  string
+	logger    *Logger
+	listener  net.Listener
+	tlsConfig *tls.Config
 }
 
 // serverOptsWithDefaults copies an ServerOpts struct into a new struct,
@@ -133,9 +129,7 @@ func NewServer(opts *ServerOpts) *Server {
 	opts = serverOptsWithDefaults(opts)
 	s := new(Server)
 	s.ServerOpts = opts
-	s.listenTo = buildTCPString(opts.Hostname, opts.Port)
-	s.name = opts.Name
-	s.driverFactory = opts.Factory
+	s.listenTo = net.JoinHostPort(opts.Hostname, strconv.Itoa(opts.Port))
 	s.logger = newLogger("")
 	return s
 }
@@ -214,7 +208,7 @@ func (server *Server) ListenAndServe() error {
 			server.logger.Printf("listening error: %v", err)
 			break
 		}
-		driver, err := server.driverFactory.NewDriver()
+		driver, err := server.Factory.NewDriver()
 		if err != nil {
 			server.logger.Printf("Error creating driver, aborting client connection: %v", err)
 			tcpConn.Close()
@@ -233,23 +227,4 @@ func (server *Server) Shutdown() error {
 	}
 	// server wasnt even started
 	return nil
-}
-
-func buildTCPString(hostname string, port int) (result string) {
-	if strings.Contains(hostname, ":") {
-		// ipv6
-		if port == 0 {
-			result = "[" + hostname + "]"
-		} else {
-			result = "[" + hostname + "]:" + strconv.Itoa(port)
-		}
-	} else {
-		// ipv4
-		if port == 0 {
-			result = hostname
-		} else {
-			result = hostname + ":" + strconv.Itoa(port)
-		}
-	}
-	return
 }
