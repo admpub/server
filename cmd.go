@@ -742,7 +742,7 @@ func (cmd commandRest) Execute(conn *Conn, param string) {
 
 	conn.appendData = true
 
-	conn.writeMessage(350, fmt.Sprintln("Start transfer from", conn.lastFilePos))
+	conn.writeMessage(350, fmt.Sprint("Start transfer from ", conn.lastFilePos))
 }
 
 // commandRnfr responds to the RNFR FTP command. It's the first of two commands
