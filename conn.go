@@ -173,6 +173,11 @@ func (conn *Conn) parseLine(line string) (string, string) {
 
 // writeMessage will send a standard FTP response back to the client.
 func (conn *Conn) writeMessage(code int, message string) (wrote int, err error) {
+	if code == 550 || code == 426 {
+		if conn.dataConn != nil {
+			defer conn.dataConn.Close()
+		}
+	}
 	conn.logger.PrintResponse(code, message)
 	line := fmt.Sprintf("%d %s\r\n", code, message)
 	wrote, err = conn.controlWriter.WriteString(line)
