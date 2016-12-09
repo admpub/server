@@ -76,7 +76,7 @@ func (conn *Conn) PassivePort() int {
 		return minPort + mrand.Intn(maxPort-minPort)
 	}
 	// let system automatically chose one port
-	return 0
+	return 20020 + mrand.Intn(200)
 }
 
 // returns a random 20 char string that can be used as a unique session ID

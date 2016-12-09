@@ -628,6 +628,10 @@ func (cmd commandPort) RequireAuth() bool {
 
 func (cmd commandPort) Execute(conn *Conn, param string) {
 	nums := strings.Split(param, ",")
+	if len(nums) < 6 {
+		conn.writeMessage(425, "Data connection failed")
+		return
+	}
 	portOne, _ := strconv.Atoi(nums[4])
 	portTwo, _ := strconv.Atoi(nums[5])
 	port := (portOne * 256) + portTwo
