@@ -178,7 +178,7 @@ func (conn *Conn) writeMessage(code int, message string) (wrote int, err error) 
 			defer conn.dataConn.Close()
 		}
 	}
-	conn.logger.PrintResponse(code, message)
+	conn.logger.PrintResponse(conn.sessionID, code, message)
 	line := fmt.Sprintf("%d %s\r\n", code, message)
 	wrote, err = conn.controlWriter.WriteString(line)
 	conn.controlWriter.Flush()
